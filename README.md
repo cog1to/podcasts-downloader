@@ -13,7 +13,7 @@ feature requests and/or report bugs.
 ### Setup
 
 The script checks for possible config locations:
-- The first command-line parameter, if provided.
+- The last command-line parameter, if provided.
 - The directory from which the script is executed for `config` file.
 - The `$XDG_CONFIG_HOME/podcasts/config` file.
 - The `$HOME/.podcasts` file.
@@ -22,7 +22,11 @@ If none of them found, the script stops.
 
 ### Running
 
-Just run `podcasts`:
+The script has two run modes: download and search.
+
+#### Updating and downloading episodes
+
+Just run `podcasts` or `podcasts download`:
 
 ```bash
 >>> podcasts
@@ -43,6 +47,20 @@ file. The default file naming rule is `YYYY-MM-DD - Episode Title.mp3`.
 The scripts tries to check the file size reported by the feed with the size
 of the file on disk. If size is not specified or different, the episode is
 downloaded.
+
+#### Searching for podcasts
+
+Run `podcasts search <your-search-term>`:
+
+```bash
+>>> podcasts search "Nextlander"
+The Nextlander Podcast
+  https://audioboom.com/channels/5116059.rss
+The Nextlander Watchcast
+  https://audioboom.com/channels/5117047.rss
+```
+
+Search is performed via iTunes Search API.
 
 ### Configuration
 
