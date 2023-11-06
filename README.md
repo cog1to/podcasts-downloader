@@ -20,48 +20,6 @@ The script checks for possible config locations:
 
 If none of them found, the script stops.
 
-### Running
-
-The script has two run modes: download and search.
-
-#### Updating and downloading episodes
-
-Just run `podcasts` or `podcasts download`:
-
-```bash
->>> podcasts
-Fetching feed 'The Haskell Cast'... Done
-  Episode 'Episode 14 - Richard Eisenberg on Dependent Types ...' exists, skipping
-  Downloading 'Episode 13 - John Wiegley on Categories and Compil...'... Done
-  Episode 'Episode 12 - Neil Mitchell on Development Tools' exists, skipping
-Fetching feed 'TechSNAP MP3'... Done
-  Downloading '430: All Good Things'... Done
-  Downloading '429: Curious About Caddy'... Done
-  Downloading '428: RAID Reality Check'... Done
-```
-
-The script downloads RSS feed into each feed's respective directory, and then
-tries to download N last episodes for each feed, as specified in the config
-file. The default file naming rule is `YYYY-MM-DD - Episode Title.mp3`.
-
-The scripts tries to check the file size reported by the feed with the size
-of the file on disk. If size is not specified or different, the episode is
-downloaded.
-
-#### Searching for podcasts
-
-Run `podcasts search <your-search-term>`:
-
-```bash
->>> podcasts search "Nextlander"
-The Nextlander Podcast
-  https://audioboom.com/channels/5116059.rss
-The Nextlander Watchcast
-  https://audioboom.com/channels/5117047.rss
-```
-
-Search is performed via iTunes Search API.
-
 ### Configuration
 
 The config file is JSON-formatted. Here's the example:
@@ -96,7 +54,8 @@ Can be overriden by the feed config.
 
 `path`: Path to hold downloaded episodes
 
-`url`: Feed URL
+`url`: Feed URL. To find a podcast's feed URL you can use the search function
+of the script, described below.
 
 `max-episodes`: Overrides the episode count to download for specific feed.
 
@@ -107,6 +66,49 @@ are
 - `episode` - episode number (usually present in iTunes feeds)
 - `season` - season number (usually present in iTunes feeds)
 - `file` - filename extracted from the episode's URL
+
+### Running
+
+The script has two run modes: download and search.
+
+#### Searching for podcasts
+
+Run `podcasts search <your-search-term>`. It will return a list of podcast
+names with their feed URLs.
+
+```bash
+>>> podcasts search "Nextlander"
+The Nextlander Podcast
+  https://audioboom.com/channels/5116059.rss
+The Nextlander Watchcast
+  https://audioboom.com/channels/5117047.rss
+```
+
+Search is performed via iTunes Search API.
+
+#### Updating and downloading episodes
+
+Just run `podcasts` or `podcasts download`:
+
+```bash
+>>> podcasts
+Fetching feed 'The Haskell Cast'... Done
+  Episode 'Episode 14 - Richard Eisenberg on Dependent Types ...' exists, skipping
+  Downloading 'Episode 13 - John Wiegley on Categories and Compil...'... Done
+  Episode 'Episode 12 - Neil Mitchell on Development Tools' exists, skipping
+Fetching feed 'TechSNAP MP3'... Done
+  Downloading '430: All Good Things'... Done
+  Downloading '429: Curious About Caddy'... Done
+  Downloading '428: RAID Reality Check'... Done
+```
+
+The script downloads RSS feed into each feed's respective directory, and then
+tries to download N last episodes for each feed, as specified in the config
+file. The default file naming rule is `YYYY-MM-DD - Episode Title.mp3`.
+
+The scripts tries to check the file size reported by the feed with the size
+of the file on disk. If size is not specified or different, the episode is
+downloaded.
 
 ### License
 
