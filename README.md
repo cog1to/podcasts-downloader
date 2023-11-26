@@ -88,7 +88,7 @@ Search is performed via iTunes Search API.
 
 #### Updating and downloading episodes
 
-Just run `podcasts` or `podcasts download`:
+Just run `podcasts` or `podcasts <title>`:
 
 ```bash
 >>> podcasts
