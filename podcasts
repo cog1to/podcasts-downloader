@@ -61,6 +61,7 @@ class Feed:
         self.url = json["url"]
         self.format = json["file-format"] if "file-format" in json else None
         self.maxEpisodes = json["max-episodes"] if "max-episodes" in json else None
+        self.auto = json["auto"] if "auto" in json else True
 
 def prepareFeed(path):
     """Creates a destination directory"""
@@ -272,7 +273,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "help":
 if len(sys.argv) == 1 or sys.argv[1] != "search":
     config = readConfig()
     for feed in config.feeds:
-        if len(sys.argv) == 1 or feed.title == sys.argv[1]:
+        if (len(sys.argv) > 1 and feed.title == sys.argv[1]) or (len(sys.argv) == 1 and feed.auto == True):
             print("Fetching feed '{}'... ".format(feed.title), end = '', flush = True)
             prepareFeed(feed.path)
             fetched = fetchFeed(feed.path, feed.url)

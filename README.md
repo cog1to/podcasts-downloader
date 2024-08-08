@@ -67,6 +67,10 @@ are
 - `season` - season number (usually present in iTunes feeds)
 - `file` - filename extracted from the episode's URL
 
+`auto`: Use to explicitly disable/enable auto-download when running in batch
+mode (without arguments). If set to `false`, the podcast will be skipped. You
+can still force update it by rinning `podcasts <name-of-the-podcast>`.
+
 ### Running
 
 The script has two run modes: download and search.
