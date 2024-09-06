@@ -29,12 +29,15 @@ The config file is JSON-formatted. Here's the example:
   "feeds": [
     {
       "title": "The Haskell Cast",
+      "alias": "thc",
       "path": "~/audio/podcasts/The Haskell Cast",
       "url": "http://www.haskellcast.com/feed.xml",
-      "file-format": "{pub} - {title}.mp3"
+      "file-format": "{pub} - {title}.mp3",
+      "auto": false,
     },
     {
       "title": "TechSNAP MP3",
+      "alias": "ts",
       "path": "~/audio/podcasts/TechSNAP MP3",
       "url": "http://feeds.feedburner.com/techsnapmp3",
       "max-episodes": 3
@@ -50,7 +53,9 @@ Can be overriden by the feed config.
 
 #### Feed configuration
 
-`title`: User-friendly title
+`title`: Podcast's title
+
+`alias`: Short handle for commands
 
 `path`: Path to hold downloaded episodes
 
@@ -73,7 +78,17 @@ can still force update it by rinning `podcasts <name-of-the-podcast>`.
 
 ### Running
 
-The script has two run modes: download and search.
+The script has three run modes: list, download and search.
+
+#### Listing
+
+Running `podcasts list` will print the list of podcasts parsed from the config.
+
+```bash
+>>> podcasts list
+hc - The Haskell Cast - http://www.haskellcast.com/feed.xml
+otm - On The Metal - https://feeds.transistor.fm/on-the-metal-0294649e-ec23-4eab-975a-9eb13fd94e06
+```
 
 #### Searching for podcasts
 
@@ -92,7 +107,10 @@ Search is performed via iTunes Search API.
 
 #### Updating and downloading episodes
 
-Just run `podcasts` or `podcasts <title>`:
+Run `podcasts` or `podcasts <title>`. Running without arguments will update and
+download all feeds that are not marked with `"auto": false` in the config.
+Running with a feed alias as an argument will force update that specific feed,
+ignoring `auto` config.
 
 ```bash
 >>> podcasts

@@ -57,6 +57,7 @@ class Feed:
     """Feed info container"""
     def __init__(self, json):
         self.title = json["title"]
+        self.alias = json["alias"]
         self.path = os.path.expanduser(os.path.expandvars(json["path"]))
         self.url = json["url"]
         self.format = json["file-format"] if "file-format" in json else None
@@ -296,10 +297,16 @@ if len(sys.argv) > 1 and sys.argv[1] == "help":
     )
     quit()
 
+if len(sys.argv) > 1 and sys.argv[1] == "list":
+    config = readConfig()
+    for feed in config.feeds:
+        print("{} - {} - {}".format(feed.alias, feed.title, feed.url))
+    quit()
+
 if len(sys.argv) == 1 or sys.argv[1] != "search":
     config = readConfig()
     for feed in config.feeds:
-        if (len(sys.argv) > 1 and feed.title == sys.argv[1]) or (len(sys.argv) == 1 and feed.auto == True):
+        if (len(sys.argv) > 1 and feed.alias == sys.argv[1]) or (len(sys.argv) == 1 and feed.auto == True):
             print("Fetching feed '{}'... ".format(feed.title), end = '', flush = True)
             prepareFeed(feed.path)
             fetched = fetchFeed(feed.path, feed.url)
