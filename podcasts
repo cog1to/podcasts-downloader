@@ -79,7 +79,7 @@ def fetchFeed(path, url):
 
 def downloadFile(url, destPath, verifySize):
     """Downloads a file from given URL and saves is to the given path"""
-    # Pretend that we're not a robot.
+    # Pretend we're not a robot.
     headers = {"User-Agent": "curl/8.2.1"}
     # Download file.
     try:
@@ -150,7 +150,7 @@ def getEpisodes(feedPath, count):
             if field.tag == "{http://www.itunes.com/dtds/podcast-1.0.dtd}season":
                 item.season = int(field.text)
         items.append(item)
-        if len(items) == count:
+        if count > 0 and len(items) == count:
             break
     return items
 
@@ -160,7 +160,12 @@ def formatEpisode(episode, fileFormat):
     if fileFormat == None:
         fileFormat = "{pub} - {title}.mp3"
     fileName = fileFormat
-    # Replace placeholders with data
+    # Replace placeholders with data.
+    # Supported placeholders:
+    #   {pub} - publication date
+    #   {title} - episode title
+    #   {season} - season number
+    #   {file} - filename (extracted from the URL)
     if "{pub}" in fileFormat:
         pubDate = "{}-{:02}-{:02}".format(
             episode.date[0],
@@ -169,17 +174,8 @@ def formatEpisode(episode, fileFormat):
         )
         fileName = fileName.replace("{pub}", pubDate)
     if "{title}" in fileFormat:
-        sanitized = episode.title.replace("/", "_")
-        sanitized = sanitized.replace("\\", "_")
-        sanitized = sanitized.replace(":", "_")
-        sanitized = sanitized.replace("&", "_")
-        sanitized = sanitized.replace("%", "_")
-        sanitized = sanitized.replace("$", "_")
-        sanitized = sanitized.replace("@", "_")
-        sanitized = sanitized.replace("?", "_")
-        sanitized = sanitized.replace("!", "_")
-        sanitized = sanitized.replace(",", "_")
-        sanitized = sanitized.replace(";", "_")
+        # Sanitize file name. Useful for compatibility with old filesystems.
+        sanitized = sanitize(episode.title)
         fileName = fileName.replace("{title}", sanitized)
     if "{episode}" in fileFormat:
         fileName = fileName.replace(
@@ -193,9 +189,23 @@ def formatEpisode(episode, fileFormat):
         )
     if "{file}" in fileFormat:
         parsedUrl = urlparse(episode.url)
-        file = parsedUrl.path.rsplit("/", 1)[-1]
+        # Sanitize file name. Useful for compatibility with old filesystems.
+        file = sanitize(parsedUrl.path.rsplit("/", 1)[-1])
         fileName = fileName.replace("{file}", file)
     return fileName
+
+def sanitize(value):
+    return value.replace("/", "_") \
+        .replace("\\", "_") \
+        .replace(":", "_") \
+        .replace("&", "_") \
+        .replace("%", "_") \
+        .replace("$", "_") \
+        .replace("@", "_") \
+        .replace("?", "_") \
+        .replace("!", "_") \
+        .replace(",", "_") \
+        .replace(";", "_") \
 
 def downloadEpisode(basePath, episode, fileFormat):
     """Checks if episode was already synced and downloads it if necessary"""
@@ -296,38 +306,76 @@ def findConfig(paths):
 
 # Main
 
-if len(sys.argv) > 1 and sys.argv[1] == "help":
-    print("usage:\n  podcasts [podcast title] -- download feeds and episodes for all or specified title\n  podcasts search <search-term> -- do iTunes search for the podcast name"
-    )
+if len(sys.argv) > 1 and sys.argv[1] == "-h":
+    usage = [
+        [
+            "usage:"
+        ],
+        [
+            "%s" % (sys.argv[0]),
+            "download feeds and episodes for all podcasts"
+        ],
+        [
+            "%s <podcast>" % (sys.argv[0]),
+            "download feed and episodes for a specified podcast"
+        ],
+        [
+            "%s <podcast> <term>" % (sys.argv[0]),
+            "downloads an episode matching given <term> from <podcast>"
+        ],
+        [
+            "%s -s <search-term>" % (sys.argv[0]),
+            "do iTunes search for the podcast name"
+        ],
+        [
+            "%s -l" % (sys.argv[0]),
+            "prints friendly-formatted list of podcasts read from config file"
+        ],
+        [
+            "%s -h" % (sys.argv[0]),
+            "display this message"
+        ],
+    ]
+    print("\n  ".join([" -- ".join(a) for a in usage]))
     quit()
 
-if len(sys.argv) > 1 and sys.argv[1] == "list":
+if len(sys.argv) > 1 and sys.argv[1] == "-l":
     config = readConfig()
     for feed in config.feeds:
         print("{} - {} - {}".format(feed.alias, feed.title, feed.url))
     quit()
 
-if len(sys.argv) == 1 or sys.argv[1] != "search":
+if len(sys.argv) > 1 and sys.argv[1] == "-s":
+    if len(sys.argv) < 3:
+        error("usage: podcasts -s <search-term>")
+    performSearch(sys.argv[2])
+    quit()
+
+if len(sys.argv) == 1 or sys.argv[1] != "-s":
     config = readConfig()
     for feed in config.feeds:
-        if (len(sys.argv) > 1 and feed.alias == sys.argv[1]) or (len(sys.argv) == 1 and feed.auto == True):
+        # Update feed if no podcast name was specified or if argument matches
+        # this podcast name.
+        if ((len(sys.argv) > 1 and feed.alias == sys.argv[1]) or
+            (len(sys.argv) == 1 and feed.auto == True)):
             print("Fetching feed '{}'... ".format(feed.title), end = '', flush = True)
             prepareFeed(feed.path)
             fetched = fetchFeed(feed.path, feed.url)
             if fetched == True:
                 print("Done")
-                episodes = getEpisodes(
-                    feed.path + "/feed.xml",
-                    feed.maxEpisodes if feed.maxEpisodes != None else config.maxEpisodes
-                )
+                # Get max episode count.
+                # Only limit the number of episodes for regular feed updates.
+                count = 0
+                if len(sys.argv) < 3:
+                    count = feed.maxEpisodes if feed.maxEpisodes != None else config.maxEpisodes
+                # Get list of episodes.
+                episodes = getEpisodes(feed.path + "/feed.xml", count)
                 for ep in episodes:
-                    downloadEpisode(feed.path, ep, feed.format)
+                    # Download the episode if we're updating the whole feed
+                    # or if it matches given episode search term.
+                    if ((len(sys.argv) < 3) or (sys.argv[2] in ep.title)):
+                        downloadEpisode(feed.path, ep, feed.format)
             else:
                 print("Failed, skipping")
     quit()
 
-if len(sys.argv) > 1 and sys.argv[1] == "search":
-    if len(sys.argv) < 3:
-        error("usage: podcasts search <search-term>")
-    performSearch(sys.argv[2])
-    quit()
