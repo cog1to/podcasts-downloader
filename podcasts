@@ -176,6 +176,10 @@ def formatEpisode(episode, fileFormat):
         sanitized = sanitized.replace("%", "_")
         sanitized = sanitized.replace("$", "_")
         sanitized = sanitized.replace("@", "_")
+        sanitized = sanitized.replace("?", "_")
+        sanitized = sanitized.replace("!", "_")
+        sanitized = sanitized.replace(",", "_")
+        sanitized = sanitized.replace(";", "_")
         fileName = fileName.replace("{title}", sanitized)
     if "{episode}" in fileFormat:
         fileName = fileName.replace(
