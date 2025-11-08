@@ -4,6 +4,7 @@ import json
 import os
 import urllib.request
 import sys
+import ssl
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, quote
 from email.utils import parsedate
@@ -80,12 +81,12 @@ def fetchFeed(path, url):
 def downloadFile(url, destPath, verifySize):
     """Downloads a file from given URL and saves is to the given path"""
     # Pretend we're not a robot.
-    headers = {"User-Agent": "curl/8.2.1"}
+    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0"}
     destFile = None
     # Download file.
     try:
         req = urllib.request.Request(url, headers = headers)
-        response = urllib.request.urlopen(req)
+        response = urllib.request.urlopen(req, context = ssl._create_unverified_context())
         # Check response length. If it's present, we can do fancy progress stuff
         length = response.getheader('content-length')
         first = True
