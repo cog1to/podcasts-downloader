@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import json
 import configparser
+import optparse
 import os
 import urllib.request
 import sys
@@ -289,20 +291,24 @@ PATHS_TO_CONFIG = [
     "$HOME/.podcasts"
 ]
 
-def readConfig():
+def readConfig(filepath=None):
     """Reads and parses a config file"""
-    path = findConfig(PATHS_TO_CONFIG)
+    path = findConfig(filepath, PATHS_TO_CONFIG)
     # Read file
     parser = configparser.ConfigParser()
     parser.read(path)
     # Parse and return
     return Config(parser)
 
-def findConfig(paths):
+def findConfig(override, paths):
     """Tries to find and read the config file"""
     # Check CLI argument first.
-    if len(sys.argv) > 1 and os.path.exists(sys.argv[-1]):
-        return sys.argv[-1]
+    if override is not None: 
+        if os.path.exists(override):
+            return override
+        else:
+            print("Error: config file '%s' does not exist" % override)
+            quit()
     # Check default locations.
     for path in paths:
         extended = os.path.expanduser(os.path.expandvars(path))
@@ -313,58 +319,33 @@ def findConfig(paths):
 
 # Main
 
-if len(sys.argv) > 1 and sys.argv[1] == "-h":
-    usage = [
-        [
-            "usage:"
-        ],
-        [
-            "%s" % (sys.argv[0]),
-            "download feeds and episodes for all podcasts"
-        ],
-        [
-            "%s <podcast>" % (sys.argv[0]),
-            "download feed and episodes for a specified podcast"
-        ],
-        [
-            "%s <podcast> <term>" % (sys.argv[0]),
-            "downloads an episode matching given <term> from <podcast>"
-        ],
-        [
-            "%s -s <search-term>" % (sys.argv[0]),
-            "do iTunes search for the podcast name"
-        ],
-        [
-            "%s -l" % (sys.argv[0]),
-            "prints friendly-formatted list of podcasts read from config file"
-        ],
-        [
-            "%s -h" % (sys.argv[0]),
-            "display this message"
-        ],
-    ]
-    print("\n  ".join([" -- ".join(a) for a in usage]))
-    quit()
+usage="%prog [options] OR %prog PODCAST [TERM]"
+description="If no podcast name is provided, updates all \"auto\" feeds. Otherwise updates only the specified podcast. If term is provided, downloads episodes from the podcast containing given term."
+parser = optparse.OptionParser(usage=usage, description=description)
+parser.add_option("-c", dest="config", metavar="FILE", help="use provided config file FILE")
+parser.add_option("-l", dest="list", action="store_true", help="list known podcasts")
+parser.add_option("-s", dest="search", metavar="TERM", help="do iTunes search for the podcast name")
+opts, args = parser.parse_args()
 
-if len(sys.argv) > 1 and sys.argv[1] == "-l":
-    config = readConfig()
+if opts.list:
+    config = readConfig(opts.config)
     for feed in config.feeds:
         print("{} - {} - {}".format(feed.alias, feed.title, feed.url))
     quit()
 
-if len(sys.argv) > 1 and sys.argv[1] == "-s":
+if opts.search:
     if len(sys.argv) < 3:
         error("usage: podcasts -s <search-term>")
-    performSearch(sys.argv[2])
+    performSearch(opts.search)
     quit()
 
-if len(sys.argv) == 1 or sys.argv[1] != "-s":
-    config = readConfig()
+if True:
+    config = readConfig(opts.config)
     for feed in config.feeds:
         # Update feed if no podcast name was specified or if argument matches
         # this podcast name.
-        if ((len(sys.argv) > 1 and feed.alias == sys.argv[1]) or
-            (len(sys.argv) == 1 and feed.auto == True)):
+        if ((len(args) > 0 and feed.alias == args[0]) or
+            (len(args) == 0 and feed.auto == True)):
             print("Fetching feed '{}'... ".format(feed.title), end = '', flush = True)
             prepareFeed(feed.path)
             fetched = fetchFeed(feed.path, feed.url)
@@ -373,14 +354,14 @@ if len(sys.argv) == 1 or sys.argv[1] != "-s":
                 # Get max episode count.
                 # Only limit the number of episodes for regular feed updates.
                 count = 0
-                if len(sys.argv) < 3:
+                if len(args) < 2:
                     count = feed.maxEpisodes if feed.maxEpisodes != None else config.maxEpisodes
                 # Get list of episodes.
                 episodes = getEpisodes(feed.path + "/feed.xml", count)
                 for ep in episodes:
                     # Download the episode if we're updating the whole feed
                     # or if it matches given episode search term.
-                    if ((len(sys.argv) < 3) or (sys.argv[2] in ep.title)):
+                    if ((len(args) < 2) or (args[1] in ep.title)):
                         downloadEpisode(feed.path, ep, feed.format)
             else:
                 print("Failed, skipping")
