@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import json
+import configparser
 import os
 import urllib.request
 import sys
@@ -56,14 +56,14 @@ class Episode:
 
 class Feed:
     """Feed info container"""
-    def __init__(self, json):
-        self.title = json["title"]
-        self.alias = json["alias"]
-        self.path = os.path.expanduser(os.path.expandvars(json["path"]))
-        self.url = json["url"]
-        self.format = json["file-format"] if "file-format" in json else None
-        self.maxEpisodes = json["max-episodes"] if "max-episodes" in json else None
-        self.auto = json["auto"] if "auto" in json else True
+    def __init__(self, alias, section):
+        self.title = section["title"]
+        self.alias = alias
+        self.path = os.path.expanduser(os.path.expandvars(section["path"]))
+        self.url = section["url"]
+        self.format = section["file-format"] if "file-format" in section else None
+        self.maxEpisodes = int(section["max-episodes"]) if "max-episodes" in section else None
+        self.auto = section["auto"] if "auto" in section else True
 
 def prepareFeed(path):
     """Creates a destination directory"""
@@ -213,6 +213,9 @@ def sanitize(value):
         .replace(";", "_") \
         .replace("«", "_") \
         .replace("»", "_") \
+        .replace("|", "_") \
+        .replace("“", "_") \
+        .replace("”", "_") \
         .replace("\"", "_") \
 
 def downloadEpisode(basePath, episode, fileFormat):
@@ -272,15 +275,12 @@ def performSearch(term):
 
 class Config:
     """Config data holder"""
-    def __init__(self, json):
-        self.maxEpisodes = int(json["max-episodes"])
+    def __init__(self, config):
+        if "default" in config:
+            self.maxEpisodes = int(config["default"]["max-episodes"])
         # Parse feeds
-        feeds = []
-        feedsJson = json["feeds"]
-        for feed in feedsJson:
-            feeds.append(Feed(feed))
-        self.feeds = feeds
-
+        feedNames = filter(lambda s: s != 'default', config.sections())
+        self.feeds = list(map(lambda f: Feed(f, config[f]), feedNames))
 
 # Paths to check for config file.
 PATHS_TO_CONFIG = [
@@ -293,11 +293,10 @@ def readConfig():
     """Reads and parses a config file"""
     path = findConfig(PATHS_TO_CONFIG)
     # Read file
-    configFile = open(path)
-    configJson = json.load(configFile)
-    configFile.close()
+    parser = configparser.ConfigParser()
+    parser.read(path)
     # Parse and return
-    return Config(configJson)
+    return Config(parser)
 
 def findConfig(paths):
     """Tries to find and read the config file"""
