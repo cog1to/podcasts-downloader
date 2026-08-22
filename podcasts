@@ -65,7 +65,7 @@ class Feed:
         self.url = section["url"]
         self.format = section["file-format"] if "file-format" in section else None
         self.maxEpisodes = int(section["max-episodes"]) if "max-episodes" in section else None
-        self.auto = section["auto"] if "auto" in section else True
+        self.auto = (section["auto"] == "true") if "auto" in section else True
 
 def prepareFeed(path):
     """Creates a destination directory"""
